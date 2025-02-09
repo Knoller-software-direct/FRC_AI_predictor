@@ -1,0 +1,1 @@
+AUTH_KEY = "zTmnnKUveaky77Kgv3waDEu6VPrqsMVKcpglKg2so4eey7UEv9uJFfuxGg54rvOj"

@@ -2,7 +2,7 @@ import requests
 import json
 import time
 
-AUTH_KEY = "****"
+from constants import AUTH_KEY
 
 
 def fetch_event_keys(start_year, end_year, filename="event_keys.json"):

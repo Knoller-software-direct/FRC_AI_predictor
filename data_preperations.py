@@ -3,20 +3,23 @@ import numpy as np
 
 
 def get_team_features(team, teams):
-    return [
-        teams[team]["rookie_year"],
-        teams[team]["epa"],
-        teams[team]["winrate"],
-        teams[team]["average_rank"],
-        teams[team]["average_pick"],
-        teams[team]["average_match_score"],
-        teams[team]["number_of_events"],
-        teams[team]["average_match_score"],
-        teams[team]["worlds_rate"],
-        teams[team]["number_of_matches"],
-        teams[team]["average_opponent_epa"],
-        teams[team]["average_alliance_epa"]
-    ]
+    try:
+        return [
+            teams[team]["rookie_year"],
+            teams[team]["epa"],
+            teams[team]["winrate"],
+            teams[team]["average_rank"],
+            teams[team]["average_pick"],
+            teams[team]["average_match_score"],
+            teams[team]["number_of_events"],
+            teams[team]["average_match_score"],
+            teams[team]["worlds_rate"],
+            teams[team]["number_of_matches"],
+            teams[team]["average_opponent_epa"],
+            teams[team]["average_alliance_epa"]
+        ]
+    except KeyError:
+        return [2025, 1450, 0, 25, 25, 0, 0, 0, 0, 0, 1450, 1450]
 
 
 def process_and_save(events, teams, output_x="x.npy", output_y="y.npy"):
@@ -52,4 +55,4 @@ teams = json.load(f)
 f = open("events.json", encoding="utf8")
 events = json.load(f)
 
-process_and_save(events,teams, "training_data_features.npy","training_data_labels.npy")
+process_and_save(events, teams, "training_data_features.npy", "training_data_labels.npy")

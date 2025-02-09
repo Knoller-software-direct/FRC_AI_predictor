@@ -4,13 +4,15 @@ import os
 import warnings
 import time
 
+from constants import AUTH_KEY
+
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from ai_predictor import predict_match, predict_matches_scores, predict_matches
 
-AUTH_KEY = "zTmnnKUveaky77Kgv3waDEu6VPrqsMVKcpglKg2so4eey7UEv9uJFfuxGg54rvOj"
 
+number_of_simulations = 1000
 teams = requests.get(f'https://www.thebluealliance.com/api/v3/event/2025isde2/teams/keys',
                      headers={"X-TBA-Auth-Key": AUTH_KEY}).json()
 
@@ -62,7 +64,7 @@ def sort_dict_with_indices(my_dict):
 
 
 matches = []
-for i in range(1000):
+for i in range(number_of_simulations):
     matches += generate_matches(teams)
 teams_event_rp = {team: 0 for team in teams}
 teams_rp_average = {team: 0 for team in teams}
@@ -103,14 +105,14 @@ for i in range(len(predicted_match_results)):
                 teams_rp_average[team] += 1
 
 for team in teams_rp_average:
-    teams_rp_average[team] /= 1000
+    teams_rp_average[team] /= number_of_simulations
 
 teams_rp_average = dict(sorted(teams_rp_average.items(), key=lambda item: item[1], reverse=True))
 print(teams_rp_average)
 
 teams_average_rank = {team: 0.0 for team in teams}
 for team in teams_rank_list:
-    teams_average_rank[team] = sum(teams_rank_list[team]) / 1000
+    teams_average_rank[team] = sum(teams_rank_list[team]) / number_of_simulations
 teams_average_rank = dict(sorted(teams_average_rank.items(), key=lambda item: item[1]))
 print(teams_average_rank)
 
@@ -119,19 +121,19 @@ for team in teams_rank_list:
 
 teams_top_rank = {team: 0.0 for team in teams}
 for team in teams_rank_list:
-    teams_top_rank[team] = teams_rank_list[team][100]
+    teams_top_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.05)]
 teams_top_rank = dict(sorted(teams_top_rank.items(), key=lambda item: item[1]))
 print(teams_top_rank)
 
 teams_bottom_rank = {team: 0.0 for team in teams}
 for team in teams_rank_list:
-    teams_bottom_rank[team] = teams_rank_list[team][950]
+    teams_bottom_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.95)]
 teams_bottom_rank = dict(sorted(teams_bottom_rank.items(), key=lambda item: item[1]))
 print(teams_bottom_rank)
 
 teams_median_rank = {team: 0.0 for team in teams}
 for team in teams_rank_list:
-    teams_median_rank[team] = teams_rank_list[team][500]
+    teams_median_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.5)]
 teams_median_rank = dict(sorted(teams_median_rank.items(), key=lambda item: item[1]))
 print(teams_median_rank)
 print(len(teams))

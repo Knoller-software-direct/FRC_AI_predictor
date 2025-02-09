@@ -96734,7 +96734,7 @@
     },
     "frc10139": {
         "rookie_year": 2025,
-        "epa": 1500.0,
+        "epa": 1450.0,
         "winrate": 0.1,
         "average_rank": 25,
         "average_pick": 25,
@@ -96742,8 +96742,8 @@
         "average_match_score": 0.1,
         "worlds_rate": 0.0,
         "number_of_matches": 1,
-        "average_opponent_epa": 1500.0,
-        "average_alliance_epa": 1500.0
+        "average_opponent_epa": 1450.0,
+        "average_alliance_epa": 1450.0
     },
      "average_team": {
         "rookie_year": 2014.278304625508,
@@ -96757,5 +96757,31 @@
         "number_of_matches": 96.901490226437,
         "average_opponent_epa": 1523.4957403941835,
         "average_alliance_epa": 1512.079626457319
-      }
+      },
+      "average_team_isr": {
+        "rookie_year":2013.2903225806451,
+        "epa":1535.532258064516,
+        "winrate": 0.47117519945186487,
+        "average_rank": 19.39528245904644,
+        "average_pick": 16.568397935206708,
+        "number_of_events": 14.161290322580646,
+        "average_match_score": 0.3751211446693259,
+        "worlds_rate": 0.20322580645161278,
+        "number_of_matches": 203.33870967741936,
+        "average_opponent_epa":1545.9349548759783,
+        "average_alliance_epa": 1542.3787962342888
+        },
+        "frc10695": {
+        "rookie_year": 2025,
+        "epa": 1450.0,
+        "winrate": 0.1,
+        "average_rank": 25,
+        "average_pick": 25,
+        "number_of_events": 1,
+        "average_match_score": 0.1,
+        "worlds_rate": 0.0,
+        "number_of_matches": 1,
+        "average_opponent_epa": 1450.0,
+        "average_alliance_epa": 1450.0
+    }
 }
