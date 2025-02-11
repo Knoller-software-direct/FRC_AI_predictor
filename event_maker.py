@@ -11,7 +11,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from ai_predictor import predict_match, predict_matches_scores, predict_matches
 
-
 number_of_simulations = 1000
 teams = requests.get(f'https://www.thebluealliance.com/api/v3/event/2025isde2/teams/keys',
                      headers={"X-TBA-Auth-Key": AUTH_KEY}).json()
@@ -46,7 +45,7 @@ def generate_matches(teams):
 
 def print_matches_predictions(predicted_match_results):
     for i in range(len(predicted_match_results)):
-        print(f'red: {matches[i][0]} blue: {matches[i][1]} \n'
+        print(f'red: {predicted_match_results[i][0]} blue: {predicted_match_results[i][1]} \n'
               f'predicted winner: {"red" if predicted_match_results[i][0] > predicted_match_results[i][1] else "blue"} \n'
               f'chance: {max(predicted_match_results[i][0], predicted_match_results[i][1])} \n'
               f'red cage RP chance: {predicted_match_results[i][2]} \n'
@@ -63,79 +62,76 @@ def sort_dict_with_indices(my_dict):
     return indexed_dict
 
 
-matches = []
-for i in range(number_of_simulations):
-    matches += generate_matches(teams)
-teams_event_rp = {team: 0 for team in teams}
-teams_rp_average = {team: 0 for team in teams}
-teams_rank_list = {team: [] for team in teams}
+def simulate_event(teams):
+    matches = []
+    for i in range(number_of_simulations):
+        matches += generate_matches(teams)
 
-start = time.time()
-predicted_match_results = predict_matches(matches)
+    teams_event_table = {team: [] for team in teams}
 
-number_of_matches = len(teams) * 2
+    # event table format: [rp_average, average_rank, top_rank, bottom_rank, median_rank]
 
-for i in range(len(predicted_match_results)):
-    if i % number_of_matches == 0:
-        teams_event_rp = sorted(teams_event_rp.items(), key=lambda item: item[1], reverse=True)
-        teams_event_rp = {key: index for index, (key, value) in enumerate(teams_event_rp)}
+    teams_event_rp = {team: 0 for team in teams}
+    teams_rp_average = {team: 0 for team in teams}
+    teams_rank_list = {team: [] for team in teams}
+    teams_average_rank = {team: 0.0 for team in teams}
+    teams_median_rank = {team: 0.0 for team in teams}
+    teams_bottom_rank = {team: 0.0 for team in teams}
+    teams_top_rank = {team: 0.0 for team in teams}
 
-        for team in teams_event_rp:
-            teams_rank_list[team].append(teams_event_rp[team] + 1)
-        teams_event_rp = {team: 0 for team in teams}
+    predicted_match_results = predict_matches(matches)
+    number_of_matches = len(teams) * 2
 
-    red_alliance, blue_alliance = matches[i]
-    if predicted_match_results[i][0] > random.random():
-        for team in red_alliance:
-            teams_event_rp[team] += 3
-            teams_rp_average[team] += 3
-    else:
-        for team in blue_alliance:
-            teams_event_rp[team] += 3
-            teams_rp_average[team] += 3
-    for rp in predicted_match_results[i][2:5]:
-        for team in red_alliance:
-            if rp > random.random():
-                teams_event_rp[team] += 1
-                teams_rp_average[team] += 1
-    for rp in predicted_match_results[i][5:9]:
-        for team in blue_alliance:
-            if rp > random.random():
-                teams_event_rp[team] += 1
-                teams_rp_average[team] += 1
+    for i in range(len(predicted_match_results)):
+        if i % number_of_matches == 0:
+            teams_event_rp = sorted(teams_event_rp.items(), key=lambda item: item[1], reverse=True)
+            teams_event_rp = {key: index for index, (key, value) in enumerate(teams_event_rp)}
 
-for team in teams_rp_average:
-    teams_rp_average[team] /= number_of_simulations
+            for team in teams_event_rp:
+                teams_rank_list[team].append(teams_event_rp[team] + 1)
+            teams_event_rp = {team: 0 for team in teams}
 
-teams_rp_average = dict(sorted(teams_rp_average.items(), key=lambda item: item[1], reverse=True))
-print(teams_rp_average)
+        red_alliance, blue_alliance = matches[i]
+        if predicted_match_results[i][0] > random.random():
+            for team in red_alliance:
+                teams_event_rp[team] += 3
+                teams_rp_average[team] += 3
+        else:
+            for team in blue_alliance:
+                teams_event_rp[team] += 3
+                teams_rp_average[team] += 3
+        for rp in predicted_match_results[i][2:5]:
+            for team in red_alliance:
+                if rp > random.random():
+                    teams_event_rp[team] += 1
+                    teams_rp_average[team] += 1
+        for rp in predicted_match_results[i][5:9]:
+            for team in blue_alliance:
+                if rp > random.random():
+                    teams_event_rp[team] += 1
+                    teams_rp_average[team] += 1
 
-teams_average_rank = {team: 0.0 for team in teams}
-for team in teams_rank_list:
-    teams_average_rank[team] = sum(teams_rank_list[team]) / number_of_simulations
-teams_average_rank = dict(sorted(teams_average_rank.items(), key=lambda item: item[1]))
-print(teams_average_rank)
+    for team in teams_rp_average:
+        teams_rp_average[team] /= number_of_simulations
+        teams_event_table[team].append(teams_rp_average[team])
 
-for team in teams_rank_list:
-    teams_rank_list[team] = sorted(teams_rank_list[team])
+    for team in teams_rank_list:
+        teams_average_rank[team] = sum(teams_rank_list[team]) / number_of_simulations
+        teams_event_table[team].append(teams_average_rank[team])
 
-teams_top_rank = {team: 0.0 for team in teams}
-for team in teams_rank_list:
-    teams_top_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.05)]
-teams_top_rank = dict(sorted(teams_top_rank.items(), key=lambda item: item[1]))
-print(teams_top_rank)
+    for team in teams_rank_list:
+        teams_rank_list[team] = sorted(teams_rank_list[team])
 
-teams_bottom_rank = {team: 0.0 for team in teams}
-for team in teams_rank_list:
-    teams_bottom_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.95)]
-teams_bottom_rank = dict(sorted(teams_bottom_rank.items(), key=lambda item: item[1]))
-print(teams_bottom_rank)
+    for team in teams_rank_list:
+        teams_top_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.05)]
+        teams_event_table[team].append(teams_top_rank[team])
 
-teams_median_rank = {team: 0.0 for team in teams}
-for team in teams_rank_list:
-    teams_median_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.5)]
-teams_median_rank = dict(sorted(teams_median_rank.items(), key=lambda item: item[1]))
-print(teams_median_rank)
-print(len(teams))
-end = time.time()
-print(end - start)
+    for team in teams_rank_list:
+        teams_bottom_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.95)]
+        teams_event_table[team].append(teams_bottom_rank[team])
+
+    for team in teams_rank_list:
+        teams_median_rank[team] = teams_rank_list[team][int(number_of_simulations * 0.5)]
+        teams_event_table[team].append(teams_median_rank[team])
+
+    return teams_event_table

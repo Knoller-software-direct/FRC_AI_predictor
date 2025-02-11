@@ -3,6 +3,7 @@ import json
 import requests
 
 from ai_predictor import predict_matches_scores
+from constants import AUTH_KEY
 
 with open("teams.json", "r") as file:
     teams = json.load(file)
@@ -139,4 +140,4 @@ def create_rating_file(teams_csv, filename):
 #     if teams[team]["average_rank"] != 0:
 #         rateable_teams.append(team)
 #
-# print(rate_teams(rateable_teams))
+# print(rate_teams(teams_isr))
