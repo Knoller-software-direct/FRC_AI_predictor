@@ -1,5 +1,7 @@
 import csv
 import json
+import math
+
 import requests
 
 from ai_predictor import predict_matches_scores
@@ -37,8 +39,7 @@ def get_teams_from_sb_csv(filename):
 def rating_function(chance_to_beat_average_alliance):
     if chance_to_beat_average_alliance >= 1 or chance_to_beat_average_alliance <= 0:
         return -1
-    return 1.0 / (1.0 - chance_to_beat_average_alliance) - 1.0
-    # f(x) = 1/(1-x) - 1. when x -> 0 f(x) -> 0 when f(x) -> 1 f(x) -> infinity
+    return 0.5 / (1 - chance_to_beat_average_alliance)
 
 
 def get_average_team(rateable_teams):
@@ -111,19 +112,26 @@ def get_average_team(rateable_teams):
 
 def rate_teams(rateable_teams):
     matches = []
-    teams_scores = {team: [0, 0.0] for team in rateable_teams}
-
+    teams_scores = {team: [0, 0.0, 0.0] for team in rateable_teams}
     for team in rateable_teams:
         matches.append([[team, team, team], ["average_team", "average_team", "average_team"]])
     scores = predict_matches_scores(matches)
 
     for i in range(len(scores)):
         teams_scores[matches[i][0][0]][1] += rating_function(float(scores[i][0]))
+        teams_scores[matches[i][0][0]][2] += float(scores[i][0])
     teams_scores = sorted(teams_scores.items(), key=lambda item: item[1], reverse=True)
 
-    teams_scores = {key: [index + 1, value[1]] for index, (key, value) in enumerate(teams_scores)}
+    teams_scores = {key: [index + 1, value[1], value[2]] for index, (key, value) in enumerate(teams_scores)}
     return teams_scores
 
+
+def rate_all_teams():
+    rateable_teams = []
+    for team in teams:
+        if teams[team]["average_rank"] != 0:
+            rateable_teams.append(team)
+    return rate_teams(rateable_teams)
 
 def create_rating_file(teams_csv, filename):
     teams = get_teams_from_sb_csv(teams_csv)
@@ -132,6 +140,7 @@ def create_rating_file(teams_csv, filename):
     with open(filename, "w") as outfile:
         json.dump(teams_rating, outfile)
 
+
 # teams_isr = requests.get(f'https://www.thebluealliance.com/api/v3/district/2025isr/teams/keys',
 #                          headers={"X-TBA-Auth-Key": AUTH_KEY}).json()
 
@@ -139,5 +148,25 @@ def create_rating_file(teams_csv, filename):
 # for team in teams:
 #     if teams[team]["average_rank"] != 0:
 #         rateable_teams.append(team)
+
+# teams_rating = rate_teams(rateable_teams)
+# rating_sum = 0
+# rating_sum_unitless = 0
+# top_team_rating = 0
+# top_team_rating_unitless = 0
 #
-# print(rate_teams(teams_isr))
+#
+# index = int(len(teams_rating) * 0.2)
+#
+# for team in teams_rating:
+#     if index >= 0:
+#         top_team_rating += teams_rating[team][1]
+#         top_team_rating_unitless += teams_rating[team][2]
+#         index -= 1
+#     rating_sum += teams_rating[team][1]
+#     rating_sum_unitless+= teams_rating[team][2]
+#
+#
+# print(top_team_rating / rating_sum)
+# print(top_team_rating_unitless / rating_sum_unitless)
+

@@ -3,8 +3,11 @@ import re
 import tkinter
 from tkinter import ttk
 import customtkinter as ctk
+import team_rater as team_rater
+import requests
 
 from ai_predictor import predict_match
+from constants import AUTH_KEY
 from event_maker import simulate_event
 from team_rater import create_rating_file
 
@@ -89,7 +92,7 @@ def rate_team(team_key, rating_label):
             ratings = json.load(file)
     try:
         team = "frc" + team_key.strip()
-        text = f'team {team} are rated: {ratings[team][0]} world wide with an ATR of {ratings[team][1]}'
+        text = f'team {team} are rated: {ratings[team][0]} world wide with an MAT of {ratings[team][1]}'
 
     except KeyError:
         text = f'team not found'
@@ -136,7 +139,7 @@ def open_make_event():
                          font=("Arial", 16))
     title.pack(pady=20)
 
-    event_text = ctk.CTkTextbox(make_event_window, width=580, height=200)  # Large Textbox
+    event_text = ctk.CTkTextbox(make_event_window, width=580, height=200)
     event_text.pack(fill="both", expand=True, padx=10, pady=5)
 
     error_label = ctk.CTkLabel(make_event_window, text="", text_color="red", font=("Arial", 12))
@@ -226,7 +229,6 @@ def open_make_event():
 
     def make_event():
         event_content = event_text.get("1.0", "end").strip()
-
         valid, error = validate_event_text(event_content)
         if not valid:
             error_label.configure(text=error)
@@ -244,19 +246,171 @@ def open_make_event():
     make_event_window.mainloop()
 
 
-def open_window(title):
-    root.destroy()
-    new_window = ctk.CTk()
-    new_window.title(title)
-    new_window.geometry("600x600")
+def show_all_ratings():
+    data = team_rater.rate_all_teams()
+    table_window = tkinter.Toplevel()
+    table_window.title("world ratings")
+    table_window.geometry("800x400")
 
-    menu_btn = ctk.CTkButton(new_window, text="Menu", command=lambda: main_menu(new_window))
+    style = ttk.Style()
+    style.configure("Treeview", font=("Arial", 14))
+    style.configure("Treeview.Heading", font=("Arial", 14, "bold"))
+    frame = ttk.Frame(table_window)
+    frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    tree_scroll = ttk.Scrollbar(frame, orient="vertical")
+    tree_scroll.pack(side="right", fill="y")
+
+    columns = (
+        "Rank", "Team Key", "MAT score", "chance to beat average team")
+    tree = ttk.Treeview(frame, columns=columns, show="headings", yscrollcommand=tree_scroll.set)
+
+    tree_scroll.config(command=tree.yview)
+
+    for col in columns:
+        tree.heading(col, text=col)
+        tree.column(col, anchor="center", width=100)
+
+    tree.pack(fill="both", expand=True)
+
+    sorted_data = sorted(data.items(), key=lambda item: item[1][0], reverse=False)
+    for rank, (team_key, values) in enumerate(sorted_data, start=1):
+        tree.insert("", "end", values=(
+        values[0], team_key, "{:.2f}".format((float(values[1]))), "{:.2f}".format((float(values[2] * 100))) + "%"))
+
+    def find_in_table(event=None):
+        search_query = "frc" + search_entry.get().strip().lower()
+        for item in tree.get_children():
+            values = tree.item(item, "values")
+            if any(search_query in str(value).lower() for value in values):
+                tree.selection_set(item)
+                tree.see(item)
+                break
+
+    search_frame = ttk.Frame(table_window)
+    search_frame.pack(fill="x", padx=10, pady=5)
+
+    search_label = ttk.Label(search_frame, text="Search:")
+    search_label.pack(side="left", padx=5)
+
+    search_entry = ttk.Entry(search_frame)
+    search_entry.pack(side="left", fill="x", expand=True, padx=5)
+
+    search_button = ttk.Button(search_frame, text="Find", command=find_in_table)
+    search_button.pack(side="left", padx=5)
+
+
+def open_predict_event():
+    root.withdraw()
+    make_event_window = ctk.CTk()
+    make_event_window.title("Predict Event")
+    make_event_window.geometry("600x600")
+
+    menu_btn = ctk.CTkButton(make_event_window, text="Main Menu", command=lambda: main_menu(make_event_window))
     menu_btn.pack(pady=10, anchor="w", padx=10)
 
-    label = ctk.CTkLabel(new_window, text=f"{title} Page", font=("Arial", 18))
-    label.pack(pady=40)
+    title = ctk.CTkLabel(make_event_window,
+                         text="Enter event Key, keys can be obtained from the URL in The Blue alliance\n"
+                              "https://www.thebluealliance.com/event/{event key}",
+                         font=("Arial", 16))
+    title.pack(pady=20)
 
-    new_window.mainloop()
+    event_text = ctk.CTkTextbox(make_event_window)
+    event_text.pack(pady=5)
+
+    error_label = ctk.CTkLabel(make_event_window, text="", text_color="red", font=("Arial", 12))
+    error_label.pack(pady=5)
+
+    def validate_event_key(event_key):
+        teams = requests.get(f'https://www.thebluealliance.com/api/v3/event/{event_key}/teams/keys',
+                             headers={"X-TBA-Auth-Key": AUTH_KEY}).json()
+        if type(teams) == dict:
+            return None, False
+        return teams, True
+
+    def create_event_data(teams):
+        # event table format: [rp_average, average_rank, top_rank, bottom_rank, median_rank]
+        return simulate_event(teams)
+
+    def open_data_window(data, key):
+        table_window = tkinter.Toplevel()
+        table_window.title(key)
+        table_window.geometry("800x400")
+
+        style = ttk.Style()
+        style.configure("Treeview", font=("Arial", 14))
+        style.configure("Treeview.Heading", font=("Arial", 14, "bold"))
+        frame = ttk.Frame(table_window)
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        tree_scroll = ttk.Scrollbar(frame, orient="vertical")
+        tree_scroll.pack(side="right", fill="y")
+
+        columns = (
+            "Predicted Rank", "Team Key", "Average RP", "Mean Rank", "5th Percentile", "95th Percentile", "Median Rank")
+        tree = ttk.Treeview(frame, columns=columns, show="headings", yscrollcommand=tree_scroll.set)
+
+        tree_scroll.config(command=tree.yview)
+
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, anchor="center", width=100)
+
+        tree.pack(fill="both", expand=True)
+
+        sorted_data = sorted(data.items(), key=lambda item: item[1][0], reverse=True)
+        for rank, (team_key, values) in enumerate(sorted_data, start=1):
+            tree.insert("", "end", values=(rank, team_key, *values))
+
+        def find_in_table(event=None):
+            search_query = search_entry.get().strip().lower()
+            for item in tree.get_children():
+                values = tree.item(item, "values")
+                if any(search_query in str(value).lower() for value in values):
+                    tree.selection_set(item)
+                    tree.see(item)
+                    break
+
+        search_frame = ttk.Frame(table_window)
+        search_frame.pack(fill="x", padx=10, pady=5)
+
+        search_label = ttk.Label(search_frame, text="Search:")
+        search_label.pack(side="left", padx=5)
+
+        search_entry = ttk.Entry(search_frame)
+        search_entry.pack(side="left", fill="x", expand=True, padx=5)
+
+        search_button = ttk.Button(search_frame, text="Find", command=find_in_table)
+        search_button.pack(side="left", padx=5)
+
+        table_window.bind("<Control-f>", find_in_table)
+        table_window.mainloop()
+
+    def adjust_textbox_height(_):
+        lines = event_text.get("1.0", "end").count("\n")
+        new_height = min(400, max(200, lines * 20))
+        event_text.configure(height=new_height)
+
+    event_text.bind("<KeyRelease>", adjust_textbox_height)
+
+    def make_event():
+        event_content = event_text.get("1.0", "end").strip()
+        teams, valid = validate_event_key(event_content)
+        if not valid:
+            error_label.configure(text="invalid event key")
+            return
+        else:
+            error_label.configure(text="")
+        event_data = create_event_data(teams)
+
+        open_data_window(event_data, event_content)
+
+    make_event_button = ctk.CTkButton(make_event_window, text="Make Event", command=make_event)
+    make_event_button.pack(pady=10)
+
+    make_event_window.protocol("WM_DELETE_WINDOW", lambda: root.quit())
+    make_event_window.mainloop()
+
 
 
 def main_menu(current_window=None):
@@ -273,10 +427,10 @@ def main_menu(current_window=None):
 
     buttons = [
         ("Rate Team", lambda: open_rate_team()),
-        ("Predict Event", lambda: open_window("Predict Event")),
+        ("Predict Event", lambda: open_predict_event()),
         ("Create Match", lambda: open_create_match()),
         ("Make Event", lambda: open_make_event()),
-        ("Show All Ratings", lambda: open_window("Show All Ratings"))
+        ("Show All Ratings", lambda: show_all_ratings())
     ]
 
     for text, command in buttons:
