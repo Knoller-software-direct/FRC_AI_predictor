@@ -18,6 +18,9 @@ ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
 
+def check_windows():
+    root.destroy()
+
 def result_label_update(red_teams, blue_teams):
     red_alliance = [entry.get().strip() for entry in red_teams]
     blue_alliance = [entry.get().strip() for entry in blue_teams]
@@ -78,7 +81,7 @@ def open_create_match():
     result_label = ctk.CTkLabel(match_window, text="", font=("Arial", 14))
     result_label.pack(pady=10)
 
-    match_window.protocol("WM_DELETE_WINDOW", lambda: root.quit())
+    match_window.protocol("WM_DELETE_WINDOW", lambda: (match_window.destroy(), root.destroy()))
     match_window.mainloop()
 
 
@@ -121,7 +124,7 @@ def open_rate_team():
     rate_btn.pack(pady=10)
 
     rate_window.bind("<Return>", lambda event: rate_team(entry.get(), rating_label))
-    rate_window.protocol("WM_DELETE_WINDOW", lambda: root.quit())
+    rate_window.protocol("WM_DELETE_WINDOW", lambda: (rate_window.destroy(), root.destroy()))
     rate_window.mainloop()
 
 
@@ -242,7 +245,7 @@ def open_make_event():
     make_event_button = ctk.CTkButton(make_event_window, text="Make Event", command=make_event)
     make_event_button.pack(pady=10)
 
-    make_event_window.protocol("WM_DELETE_WINDOW", lambda: root.quit())
+    make_event_window.protocol("WM_DELETE_WINDOW", lambda: (make_event_window.destroy(), root.destroy()))
     make_event_window.mainloop()
 
 
@@ -302,23 +305,23 @@ def show_all_ratings():
 
 def open_predict_event():
     root.withdraw()
-    make_event_window = ctk.CTk()
-    make_event_window.title("Predict Event")
-    make_event_window.geometry("600x600")
+    predict_event_window = ctk.CTk()
+    predict_event_window.title("Predict Event")
+    predict_event_window.geometry("600x600")
 
-    menu_btn = ctk.CTkButton(make_event_window, text="Main Menu", command=lambda: main_menu(make_event_window))
+    menu_btn = ctk.CTkButton(predict_event_window, text="Main Menu", command=lambda: main_menu(predict_event_window))
     menu_btn.pack(pady=10, anchor="w", padx=10)
 
-    title = ctk.CTkLabel(make_event_window,
+    title = ctk.CTkLabel(predict_event_window,
                          text="Enter event Key, keys can be obtained from the URL in The Blue alliance\n"
                               "https://www.thebluealliance.com/event/{event key}",
                          font=("Arial", 16))
     title.pack(pady=20)
 
-    event_text = ctk.CTkTextbox(make_event_window)
+    event_text = ctk.CTkTextbox(predict_event_window)
     event_text.pack(pady=5)
 
-    error_label = ctk.CTkLabel(make_event_window, text="", text_color="red", font=("Arial", 12))
+    error_label = ctk.CTkLabel(predict_event_window, text="", text_color="red", font=("Arial", 12))
     error_label.pack(pady=5)
 
     def validate_event_key(event_key):
@@ -405,12 +408,11 @@ def open_predict_event():
 
         open_data_window(event_data, event_content)
 
-    make_event_button = ctk.CTkButton(make_event_window, text="Make Event", command=make_event)
+    make_event_button = ctk.CTkButton(predict_event_window, text="Make Event", command=make_event)
     make_event_button.pack(pady=10)
 
-    make_event_window.protocol("WM_DELETE_WINDOW", lambda: root.quit())
-    make_event_window.mainloop()
-
+    predict_event_window.protocol("WM_DELETE_WINDOW", lambda: (predict_event_window.destroy(), root.destroy()))
+    predict_event_window.mainloop()
 
 
 def main_menu(current_window=None):
@@ -437,8 +439,7 @@ def main_menu(current_window=None):
         btn = ctk.CTkButton(frame, text=text, command=command)
         btn.pack(pady=5, fill="x")
 
-    root.protocol("WM_DELETE_WINDOW", lambda: root.quit())
-
+    root.protocol("WM_DELETE_WINDOW", lambda: root.destroy())
     root.mainloop()
 
 

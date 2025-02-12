@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import httpx
 
 from constants import AUTH_KEY
 
@@ -58,7 +59,7 @@ def fetch_events(event_keys, filename="events.json", update_worlds=False):
         event_data = requests.get(f'https://www.thebluealliance.com/api/v3/event/{event_key}/simple',
                                   headers={"X-TBA-Auth-Key": AUTH_KEY}).json()
         if event_data["event_type"] > 4 or event_data["event_type"] < 0:
-            print(f'skipping {event_key}')
+            print(f'skipped {event_key}')
             continue
 
         alliances_json = requests.get(f'https://www.thebluealliance.com/api/v3/event/{event_key}/alliances',
